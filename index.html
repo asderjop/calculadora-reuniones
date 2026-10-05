@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Coste de reunión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+  /* Layout: lista de participantes a la izquierda, contador grande a la derecha; en móvil se apilan. */
+  :root {
+    --bg: #fafaf8;
+    --panel: #ffffff;
+    --fg: #1a1a1a;
+    --muted: #7d7d77;
+    --faint: #b5b5af;
+    --line: #e6e6e1;
+    --hover: #f0f0ec;
+    --btn: #1a1a1a;
+    --btn-fg: #ffffff;
+    --btn-hover: #333333;
+    --danger: #d64545;
+    --font: "DM Sans", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141413; --panel: #1b1b1a; --fg: #f1f1ee; --muted: #8f8f89; --faint: #5c5c57;
+      --line: #2c2c2a; --hover: #262625; --btn: #f1f1ee; --btn-fg: #141413; --btn-hover: #d8d8d4;
+      --danger: #ef6a6a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141413; --panel: #1b1b1a; --fg: #f1f1ee; --muted: #8f8f89; --faint: #5c5c57;
+    --line: #2c2c2a; --hover: #262625; --btn: #f1f1ee; --btn-fg: #141413; --btn-hover: #d8d8d4;
+    --danger: #ef6a6a; color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font); font-size: 15px; line-height: 1.4;
+    font-variant-numeric: tabular-nums;
+  }
+  .app { display: grid; grid-template-columns: 380px 1fr; min-height: 100%; }
+
+  /* Panel izquierdo */
+  .side {
+    background: var(--panel); border-right: 1px solid var(--line);
+    padding: 28px 28px 24px; display: flex; flex-direction: column; min-width: 0;
+  }
+  h1 { font-size: 20px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 18px; }
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .field {
+    display: flex; align-items: center; gap: 6px; border: 1px solid var(--line);
+    padding: 0 12px; background: var(--panel); min-width: 0;
+  }
+  .field:focus-within { border-color: var(--fg); }
+  .field.salary { flex: 1; }
+  .field.qty { width: 62px; padding: 0 4px; }
+  .field span { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .field input {
+    border: 0; outline: 0; background: transparent; color: var(--fg);
+    font: inherit; font-size: 16px; padding: 11px 0; width: 100%; min-width: 0;
+  }
+  .field.qty input { text-align: center; }
+  .times { color: var(--muted); }
+  .rm {
+    border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    font: inherit; font-size: 15px; padding: 8px; line-height: 1;
+  }
+  .rm:hover { color: var(--danger); }
+  .add {
+    align-self: flex-start; margin-top: 14px; border: 0; background: transparent;
+    color: var(--muted); font: inherit; cursor: pointer; padding: 6px 0;
+  }
+  .add:hover { color: var(--fg); }
+  .summary { margin-top: auto; padding-top: 24px; color: var(--muted); font-size: 13px; }
+  .hint { color: var(--faint); font-size: 12px; margin: 10px 0 0; }
+
+  /* Panel derecho */
+  .main {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 16px 32px; min-width: 0; position: relative;
+  }
+  .label { color: var(--muted); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .cost {
+    font-size: clamp(44px, 8vw, 76px); font-weight: 700; letter-spacing: -0.03em;
+    margin: 8px 0 0; line-height: 1.1; text-align: center; overflow-wrap: anywhere;
+  }
+  .time { font-size: 26px; color: var(--muted); font-weight: 400; margin: 2px 0 8px; }
+  .rate { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .btns { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 500; padding: 12px 26px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--fg);
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.primary { background: var(--btn); color: var(--btn-fg); border-color: var(--btn); min-width: 128px; }
+  .btn.primary:hover { background: var(--btn-hover); }
+  .keys { position: absolute; bottom: 16px; color: var(--faint); font-size: 12px; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    .side { border-right: 0; border-bottom: 1px solid var(--line); padding: 24px 16px; order: 2; }
+    .main { order: 1; padding-block: 48px; }
+    .keys { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="side" aria-label="Participantes">
+    <h1>Participantes</h1>
+    <p class="sub">Salario anual bruto y número de personas</p>
+    <div class="rows" id="rows"></div>
+    <button class="add" id="add" type="button">+&nbsp; Añadir participante</button>
+    <p class="hint">Valores de ejemplo. Cámbialos por los de tu reunión.</p>
+    <div class="summary" id="summary"></div>
+  </section>
+
+  <main class="main">
+    <div class="label">Coste acumulado</div>
+    <div class="cost" id="cost" aria-live="off">0,00 €</div>
+    <div class="time" id="time">00:00:00</div>
+    <div class="rate" id="rate"></div>
+    <div class="btns">
+      <button class="btn primary" id="toggle" type="button">Iniciar</button>
+      <button class="btn" id="reset" type="button">Reiniciar</button>
+    </div>
+    <div class="keys">Espacio: iniciar / pausar</div>
+  </main>
+</div>
+
+<script>
+  const HORAS_ANUALES = 52 * 40;                 // 52 semanas × 40 horas
+  const SEG_ANUALES = HORAS_ANUALES * 3600;
+
+  const eur = (v, d = 2) => new Intl.NumberFormat('es-ES', {
+    style: 'currency', currency: 'EUR', minimumFractionDigits: d, maximumFractionDigits: d,
+    useGrouping: 'always'
+  }).format(v);
+
+  const $ = id => document.getElementById(id);
+  const rowsEl = $('rows');
+  let rate = 0;            // € por segundo
+  let cost = 0, elapsed = 0, running = false, last = 0, timer = null;
+
+  function num(s) {
+    const n = parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
+    return isFinite(n) && n > 0 ? n : 0;
+  }
+
+  function addRow(salary = '', qty = '1') {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML =
+      '<label class="field salary"><span>€</span>' +
+      '<input type="text" inputmode="decimal" placeholder="Salario" aria-label="Salario anual en euros">' +
+      '<span>/ año</span></label>' +
+      '<span class="times">×</span>' +
+      '<label class="field qty"><input type="text" inputmode="numeric" aria-label="Número de personas"></label>' +
+      '<button class="rm" type="button" aria-label="Quitar participante">✕</button>';
+    const [s, q] = row.querySelectorAll('input');
+    s.value = salary; q.value = qty;
+    s.addEventListener('input', update);
+    q.addEventListener('input', update);
+    row.querySelector('.rm').addEventListener('click', () => {
+      if (rowsEl.children.length === 1) { s.value = ''; q.value = '1'; }
+      else row.remove();
+      update();
+    });
+    rowsEl.appendChild(row);
+    return s;
+  }
+
+  function update() {
+    let total = 0, people = 0;
+    for (const row of rowsEl.children) {
+      const [s, q] = row.querySelectorAll('input');
+      const n = Math.max(Math.floor(num(q.value)), 0);
+      total += num(s.value) * n;
+      people += n;
+    }
+    rate = total / SEG_ANUALES;
+    $('rate').textContent = eur(rate * 60) + ' por minuto';
+    $('summary').innerHTML = people + (people === 1 ? ' persona' : ' personas') +
+      '<br>Masa salarial: ' + eur(total, 0) + ' / año';
+  }
+
+  function paint() {
+    const t = Math.floor(elapsed);
+    const p = n => String(n).padStart(2, '0');
+    $('time').textContent = p(Math.floor(t / 3600)) + ':' + p(Math.floor(t % 3600 / 60)) + ':' + p(t % 60);
+    $('cost').textContent = eur(cost);
+  }
+
+  function tick() {
+    const now = performance.now();
+    const dt = (now - last) / 1000;
+    last = now;
+    elapsed += dt;
+    cost += dt * rate;      // usa la tarifa vigente, así se puede editar en directo
+  }
+
+  function toggle() {
+    if (running) {
+      tick(); paint();
+      clearInterval(timer); running = false;
+      $('toggle').textContent = 'Reanudar';
+    } else {
+      running = true; last = performance.now();
+      timer = setInterval(() => { tick(); paint(); }, 50);
+      $('toggle').textContent = 'Pausar';
+    }
+  }
+
+  function reset() {
+    clearInterval(timer); running = false;
+    cost = 0; elapsed = 0;
+    $('toggle').textContent = 'Iniciar';
+    paint();
+  }
+
+  $('toggle').addEventListener('click', toggle);
+  $('reset').addEventListener('click', reset);
+  $('add').addEventListener('click', () => addRow().focus());
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space') return;
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'BUTTON') return;
+    e.preventDefault(); toggle();
+  });
+
+  addRow('35000', '4');
+  addRow('60000', '1');
+  update(); paint();
+</script>
+</body>
+</html>
